@@ -1,3 +1,5 @@
+js_import foo.js;
+
 server {
     listen       80;
     server_name  _;
@@ -7,12 +9,7 @@ server {
 
 
     location ~ (/.*) {
-#        auth_request /auth;
-        proxy_set_header X-Authorization $http_x_authorization;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        js_content foo.main;
 
         fastcgi_pass  unix:/var/run/fcgiwrap.socket;
         include       fastcgi_params;

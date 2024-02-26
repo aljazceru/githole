@@ -14,8 +14,8 @@ RUN apt-get update && apt-get install -y nginx git fcgiwrap spawn-fcgi nginx-mod
 RUN sed -i '1iload_module modules/ngx_http_js_module.so;' /etc/nginx/nginx.conf 
 RUN sed -i '1iload_module modules/ngx_stream_js_module.so;' /etc/nginx/nginx.conf 
 COPY docker/nginx.conf /etc/nginx/nginx.conf
-COPY docker/nginx-hello-config /etc/nginx/sites-enabled/hello
-COPY auth/http.js /etc/nginx/http.js
+# COPY docker/nginx-hello-config /etc/nginx/sites-enabled/hello
+COPY auth/foo.js /etc/nginx/foo.js
 
 #RUN pip install --no-cache-dir jsonify --break-system-packages
 ENV GIT_PEAR=/srv/repos/pear
