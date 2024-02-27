@@ -13,7 +13,7 @@ server {
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
         proxy_set_header X-Forwarded-Proto $scheme;
-    
+
         fastcgi_pass  unix:/var/run/fcgiwrap.socket;
         include       fastcgi_params;
         fastcgi_param SCRIPT_FILENAME     /usr/lib/git-core/git-http-backend;
@@ -28,7 +28,6 @@ server {
         proxy_pass              http://localhost:3000;
         proxy_pass_request_body on;
         proxy_set_header        X-Original-URI $request_uri;
+        proxy_set_header        X-Original-Method $request_method;
     }
-
-
 }
