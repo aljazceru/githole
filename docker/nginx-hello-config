@@ -1,9 +1,0 @@
-js_import http.js;
-
-server {
-    listen 8000;
-
-    location / {
-        js_content http.hello;
-    }
-}
