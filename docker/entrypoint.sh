@@ -53,8 +53,6 @@ echo "PEAR_KEY: $PEAR_KEY" >> /tmp/debug.log
 echo "PEAR_REPO: $PEAR_REPO" >> /tmp/debug.log
 
 /etc/init.d/fcgiwrap start
-#cd /app/auth
-#python3 simple-auth.py & 
 
 chmod 766 /var/run/fcgiwrap.socket
 nginx -g "daemon off;"

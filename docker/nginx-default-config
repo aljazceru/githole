@@ -7,7 +7,6 @@ server {
 
 
     location ~ (/.*) {
-#        auth_request /auth;
         proxy_set_header X-Authorization $http_x_authorization;
         proxy_set_header Host $host;
         proxy_set_header X-Real-IP $remote_addr;
@@ -22,14 +21,5 @@ server {
         fastcgi_param GIT_PROJECT_ROOT    /srv/repos/pear;
         fastcgi_param PATH_INFO           $1;
     }
-
-#    location = /auth {
-#        internal;
-#        proxy_pass              http://localhost:1337/auth;
-#        proxy_pass_request_body off;
-#        proxy_set_header        Content-Length "";
-#        proxy_set_header        X-Original-URI $request_uri;
-#    }
-
 
 }
