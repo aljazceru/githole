@@ -1,3 +1,4 @@
+"strict mode"
 const nt = require('nostr-tools')
 
 // this is njs file to handle requests inside of nginx
@@ -7,49 +8,31 @@ const nt = require('nostr-tools')
 // - push will have hex encoded blobs
 //
 
-function main(r) {
-  console.log('----------------')
-  console.log(r.method)
-  console.log(r.uri)
-  console.log(r.requestText)
-  console.log(r.headersIn)
-  console.log('----------------')
-
-  console.error('================')
-  console.error(r.method)
-  console.error(r.uri)
-  console.error(r.requestText)
-  console.error(r.headersIn)
-  console.error('===============')
-  return
-
-  if (r.method === 'GET') {
-    // forward to github
-    return
+async function foo(req, res) {
+  if ([ 'GET', 'POST' ].includes(req.method)) {
+     req.return(405, 'Method Not Allowed')
+     return
   }
 
-  if (r.method !== 'POST') {
-    r.return(405, 'Method Not Allowed')
-    return
-  }
-
-  bodyString = r.requestText
-  authHeader = r.headersIn['X-Authorization']
-  if (authHeader) {
-    // method push (on both get and post requests)
-    // payload commit (on both get and post requests)
-    const isValid = isValidateAuthHeader(authHeader, r.uri, r.method)
-    if (!isValid) {
-      r.return(403, 'Forbidden')
-      return
-    }
-  }
-
-  // const isAuth = shouldBeAuthenticated(bodyString)
-  // if (!isAuth) {
-  //   nt.finalizeEvent(403, 'Forbidden')
+  bodyString = req.requestText
+  authHeader = req.headersIn['X-Authorization']
+  req.error('authHeader', authHeader)
+  req.return(200, 'OK')
+  // if (authHeader) {
+  //    // method push (on both get and post requests)
+  //    // payload commit (on both get and post requests)
+  //   const isValid = isValidateAuthHeader(authHeader, req.uri, req.method)
+  //   if (!isValid) {
+  //     req.return(403, 'Forbidden')
+  //     return
+  //   }
   // }
-  // nt.finalizeEvent(200, 'OK')
+ 
+   // const isAuth = shouldBeAuthenticated(bodyString)
+   // if (!isAuth) {
+   //   nt.finalizeEvent(403, 'Forbidden')
+   // }
+   // nt.finalizeEvent(200, 'OK')
 }
 
 function isValidateAuthHeader(authHeader, url, method) {
@@ -98,4 +81,4 @@ function hasWant(bodyString) {
   return bodyString.includes('want')
 }
 
-export default { main }
+module.exports = { foo }

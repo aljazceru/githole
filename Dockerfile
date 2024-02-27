@@ -15,12 +15,17 @@ RUN sed -i '1iload_module modules/ngx_http_js_module.so;' /etc/nginx/nginx.conf
 RUN sed -i '1iload_module modules/ngx_stream_js_module.so;' /etc/nginx/nginx.conf 
 COPY docker/nginx.conf /etc/nginx/nginx.conf
 # COPY docker/nginx-hello-config /etc/nginx/sites-enabled/hello
-COPY auth/foo.js /etc/nginx/foo.js
+
+COPY auth       /etc/nginx/njs/
+WORKDIR /etc/nginx/njs
+# RUN npm install
+# RUN npm install -g browserify
+# RUN browserify ./foo.js esmify > ./foo.bundle.js
 
 #RUN pip install --no-cache-dir jsonify --break-system-packages
 ENV GIT_PEAR=/srv/repos/pear
 EXPOSE 80
-EXPOSE 8000
+# EXPOSE 8000
 STOPSIGNAL SIGTERM
 
 

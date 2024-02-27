@@ -13,6 +13,7 @@ cd gna
 git pear init .
 git pear share . public
 
+
 # # if $1 exists
 # if [ -n "$1" ]; then
 #     REPO_NAME=$1
@@ -64,4 +65,4 @@ echo "PEAR_REPO: $PEAR_REPO" >> /tmp/debug.log
 #python3 simple-auth.py & 
 
 chmod 766 /var/run/fcgiwrap.socket
-nginx -g "daemon off;"
+nginx-debug -g "daemon off;"

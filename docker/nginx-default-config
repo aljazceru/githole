@@ -1,4 +1,4 @@
-js_import foo.js;
+js_import foo_bundle.js;
 
 server {
     listen       80;
@@ -7,9 +7,13 @@ server {
     # This is where the repositories live on the server
     root /srv/repos/pear;
 
-
     location ~ (/.*) {
-        js_content foo.main;
+        auth_request /auth;
+        proxy_set_header X-Authorization $http_x_authorization;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
 
         fastcgi_pass  unix:/var/run/fcgiwrap.socket;
         include       fastcgi_params;
@@ -20,13 +24,11 @@ server {
         fastcgi_param PATH_INFO           $1;
     }
 
-#    location = /auth {
-#        internal;
-#        proxy_pass              http://localhost:1337/auth;
-#        proxy_pass_request_body off;
-#        proxy_set_header        Content-Length "";
-#        proxy_set_header        X-Original-URI $request_uri;
-#    }
-
-
+    location = /auth {
+        internal;
+        proxy_pass              http://localhost:1337/auth;
+        proxy_pass_request_body on;
+        proxy_set_header        X-Original-URI $request_uri;
+        js_content foo.foo;
+    }
 }
