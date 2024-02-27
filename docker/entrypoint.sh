@@ -12,6 +12,11 @@ git clone https://github.com/dzdidi/gna.git
 cd gna
 git pear init .
 git pear share . public
+# enter pear repo and expose http
+cd /srv/repos/pear/gna/
+echo "[http]" >> config
+echo "	receivepack = true" >> config
+chown -R www-data:www-data /srv/repos/pear/gna
 
 # if $1 exists
 # if [ -n "$1" ]; then
@@ -21,6 +26,7 @@ git pear share . public
 #
 #
 # if [[ $REPO_NAME =~ ^https.* ]]; then
+# # FIXME: path seem to be wrong here
 #   ORIGINAL_NAME=$(basename $REPO_NAME .git)
 #   mkdir -p /srv/repos/"$ORIGINAL_NAME"
 #   git clone $REPO_NAME /srv/repos/"$ORIGINAL_NAME"
