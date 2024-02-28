@@ -73,9 +73,37 @@ def parse_repo_name(url):
         url = url[:-4]
     return url.split('/')[-1]
 
-# POST /deploy
 
 
+# endpoints 
+
+# Check if a repo name is available
+@app.route('/check_name', methods=['GET'])
+def check_name():
+    repo_name = request.args.get('repo_name')
+    if not repo_name:
+        return jsonify({'error': 'Missing repo_name parameter'}), 400
+
+    # Check in database
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT EXISTS(SELECT 1 FROM containers WHERE repo_name=?)", (repo_name,))
+    exists_in_db = cursor.fetchone()[0]
+
+    # Check in reserved names file
+    with open('/var/lib/ghole/reserved_names.txt', 'r') as file:
+        reserved_names = file.read().splitlines()
+    exists_in_file = repo_name in reserved_names
+
+    conn.close()
+
+    # If the name does not exist in the database and the file, it's considered free
+    if not exists_in_db and not exists_in_file:
+        return jsonify({'message': 'Name is free'}), 200  # Name is free
+    else:
+        return jsonify({'message': 'Name is taken'}), 406  # Name is taken
+
+# Deploy new container for a repo
 @app.route('/deploy', methods=['POST'])
 def deploy():
     data = request.json
