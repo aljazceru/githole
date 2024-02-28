@@ -1,23 +1,12 @@
 #!/bin/bash
 # if $1 includes an url
-# docker run -it -p 80:80 -e REPO_NAME="https://github.com/aljazceru/confidential-dvm" -e USER_NPUB="" gitpear
+# docker run -it -p 80:80 -e REPO_NAME="https://github.com/aljazceru/confidential-dvm" -e USER_NPUB="npub1jvymsvx0eqj03xmnalkzhancgjdujufsyefr4s28vv5crf88l4esunk6mw" ghole
 exec > >(tee -a "/tmp/deployment.log") 2>&1
 
 export GIT_PEAR=/srv/repos/pear 
 export GIT_PEAR_AUTH="nip98"
 export GIT_PEAR_AUTH_NSEC=$USER_NSEC
 git pear daemon -s 
-# XXX: just to have something
-git clone https://github.com/dzdidi/gna.git
-cd gna
-git pear init .
-git pear share . public
-# enter pear repo and expose http
-cd /srv/repos/pear/gna/
-echo "[http]" >> config
-echo "	receivepack = true" >> config
-chown -R www-data:www-data /srv/repos/
-
 # if $1 exists
  if [ -n "$1" ]; then
      REPO_NAME=$1
