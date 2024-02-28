@@ -1,5 +1,5 @@
 server {
-    listen       80;
+    listen       8080;
     server_name  _;
 
     # This is where the repositories live on the server
@@ -7,13 +7,6 @@ server {
 
 
     location ~ (/.*) {
-        auth_request /auth;
-        proxy_set_header X-Authorization $http_x_authorization;
-        proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
-
         fastcgi_pass  unix:/var/run/fcgiwrap.socket;
         include       fastcgi_params;
         fastcgi_param SCRIPT_FILENAME     /usr/lib/git-core/git-http-backend;
@@ -22,13 +15,33 @@ server {
         fastcgi_param GIT_PROJECT_ROOT    /srv/repos/pear;
         fastcgi_param PATH_INFO           $1;
     }
+}
 
-    location = /auth {
-        internal;
-        proxy_pass              http://localhost:1337/auth;
+server {
+    listen       80;
+    server_name  _;
+
+    location ~ (/.*) {
+        # TODO: inject port from the docker run
+        set $default_port 1337;
+        set $original_uri $scheme://$host:$default_port$request_uri;
+
+        # FIXME 
+        # if ($server_port = 80) {
+        #   set $original_uri $scheme://$host:$request_uri;
+        # }
+        if ($server_port = 443) {
+          set $original_uri $scheme://$host:$request_uri;
+        }
+        if ($server_port = 8080) {
+          set $original_uri $scheme://$host:$request_uri;
+        }
+        if ($server_port = 8000) {
+          set $original_uri $scheme://$host:$request_uri;
+        }
+        proxy_set_header X-Original-URI $original_uri;
+
+        proxy_pass              http://localhost:3000;
         proxy_pass_request_body on;
-        proxy_set_header        X-Original-URI $request_uri;
     }
-
-
 }
