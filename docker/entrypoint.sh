@@ -16,46 +16,45 @@ git pear share . public
 cd /srv/repos/pear/gna/
 echo "[http]" >> config
 echo "	receivepack = true" >> config
-chown -R www-data:www-data /srv/repos/pear/gna
+chown -R www-data:www-data /srv/repos/
 
 # if $1 exists
-# if [ -n "$1" ]; then
-#     REPO_NAME=$1
-# fi
-#
-#
-#
-# if [[ $REPO_NAME =~ ^https.* ]]; then
+ if [ -n "$1" ]; then
+     REPO_NAME=$1
+fi
+
+if [[ $REPO_NAME =~ ^https.* ]]; then
 # # FIXME: path seem to be wrong here
-#   ORIGINAL_NAME=$(basename $REPO_NAME .git)
-#   mkdir -p /srv/repos/"$ORIGINAL_NAME"
-#   git clone $REPO_NAME /srv/repos/"$ORIGINAL_NAME"
-#   cd /srv/repos/"$ORIGINAL_NAME"
-#   git pear init .
-#   git pear share . public
-#   git pear acl -u add $USER_NPUB:admin
-# # enter pear repo and expose http
-#   cd /srv/repos/pear/"$ORIGINAL_NAME"/
-#
-#   echo "[http]" >> config
-#   echo "	receivepack = true" >> config
-# fi
-#
-#
-# if [[ ! $REPO_NAME =~ ^https.* ]]; then
-#   mkdir -p /srv/repos/"$REPO_NAME"
-#   cd /srv/repos/"$REPO_NAME"
-#   git pear init .
-#   git pear share . public
-#   git pear acl add $USER_NPUB:admin
-#   # enter pear repo and expose http
-#   cd /srv/repos/pear/"$REPO_NAME"/
-#   echo "[http]" >> config
-#   echo "	receivepack = true" >> config
-#   cd /srv/repos/pear/
-#   ln -s ./"$REPO_NAME"/.git-daemon-export-ok ./
-# #  git config --bool core.bare true
-# fi
+   ORIGINAL_NAME=$(basename $REPO_NAME .git)
+   mkdir -p /srv/repos/"$ORIGINAL_NAME"
+   git clone $REPO_NAME /srv/repos/"$ORIGINAL_NAME"
+   cd /srv/repos/"$ORIGINAL_NAME"
+   git pear init .
+   git pear share . public
+   git pear acl -u add $USER_NPUB:admin
+ # enter pear repo and expose http
+   cd /srv/repos/pear/"$ORIGINAL_NAME"/
+
+   echo "[http]" >> config
+   echo "	receivepack = true" >> config
+ fi
+
+
+ if [[ ! $REPO_NAME =~ ^https.* ]]; then
+   mkdir -p /srv/repos/"$REPO_NAME"
+   cd /srv/repos/"$REPO_NAME"
+   git pear init .
+   git pear share . public
+   git pear acl add $USER_NPUB:admin
+   # enter pear repo and expose http
+   cd /srv/repos/pear/"$REPO_NAME"/
+   echo "[http]" >> config
+   echo "	receivepack = true" >> config
+   cd /srv/repos/pear/
+   ln -s ./"$REPO_NAME"/.git-daemon-export-ok ./
+  git config --bool core.bare true
+fi
+chown -R www-data:www-data /srv/repos/
 PEAR_KEY=$(git pear key)
 PEAR_REPO=$(git pear list -s)
 echo "REPO_NAME: $REPO_NAME" >> /tmp/debug.log
