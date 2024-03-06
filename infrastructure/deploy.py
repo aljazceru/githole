@@ -4,12 +4,23 @@ import socket
 import subprocess
 import sqlite3
 import os
+import time
+from nostr_sdk import Client, NostrSigner, Keys, PublicKey, Event, UnsignedEvent, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, nip59_extract_rumor, SecretKey, init_logger, LogLevel
+from settings import *
 
+init_logger(LogLevel.INFO)
 os.makedirs('/var/lib/ghole', exist_ok=True)
 
 app = Flask(__name__)
 client = docker.from_env()
 DB_PATH = '/var/lib/ghole/database.db'
+
+sk = SecretKey.from_hex(NOSTR_KEY)
+keys = Keys(sk)
+sk = keys.secret_key()
+pk = keys.public_key()
+
+
 
 def ensure_directory_exists(path):
     os.makedirs(path, exist_ok=True)
@@ -26,6 +37,7 @@ def init_db():
         container_port INTEGER NOT NULL,
         volume_path TEXT,
         repo_name TEXT NOT NULL,
+        notification_success INTEGER NULL DEFAULT 0,
         PRIMARY KEY (container_id)
     )
     ''')
@@ -74,8 +86,27 @@ def parse_repo_name(url):
     return url.split('/')[-1]
 
 
-
-# endpoints 
+def send_user_notification(user_npub,message):
+    sk = SecretKey.from_hex(NOSTR_KEY)
+    keys = Keys(sk)
+    sk = keys.secret_key()
+    pk = keys.public_key()
+    destination = PublicKey().from_bech32(user_npub)
+    signer = NostrSigner.keys(keys)
+    client = Client(signer)
+    client.add_relays(RELAY_LIST)
+    client.connect()
+    event = EventBuilder.encrypted_direct_msg(keys, PublicKey().from_bech32(user_npub), message,None).to_event(keys)
+    print(event.as_json())
+    try:
+        client.send_event(event)
+        client.disconnect()
+        return True
+    except Exception as e:
+        print(e)
+        client.disconnect()
+        return False
+    
 
 # Check if a repo name is available
 @app.route('/check_name', methods=['GET'])
@@ -152,6 +183,36 @@ def deploy():
     register_container_in_db(user_npub, container.id, available_port, volume_path, volume_name)
     
     return jsonify({"status": "success", "message": "Container deployed and route configured, volume created"})
+
+
+# create endpoint that accepts notifications from client
+@app.route('/user_notification', methods=['POST'])
+def user_notification():
+    data = request.json
+    pear_key = data['pear_key']
+    pear_repo = data['pear_repo']
+    pear_seed = data['pear_seed']
+    repo_name = data['repo_name']
+    user_npub = data['user_npub']
+    
+
+    
+    msg = f"Your repo {repo_name} has been deployed.\n Here is all the information you need to access it:\n\n Http access:\nhttps://ghole.xyz/{repo_name}\n Pear key: {pear_key}\nPear repo: {pear_repo}\nPear seed: {pear_seed}\nRepo name: {repo_name}"
+    try: 
+        send_user_notification(user_npub, msg)
+        return jsonify({"status": "success"})
+    except Exception as e:
+        print(e)
+        return jsonify({"status": "error"})
+    
+
+
+
+
+
+
+
+# Run the app)
 
 
 if __name__ == '__main__':
