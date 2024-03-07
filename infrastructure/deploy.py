@@ -5,6 +5,7 @@ import subprocess
 import sqlite3
 import os
 import time
+from datetime import datetime, timedelta
 from nostr_sdk import Client, NostrSigner, Keys, PublicKey, Event, UnsignedEvent, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, nip59_extract_rumor, SecretKey, init_logger, LogLevel
 from settings import *
 
@@ -25,10 +26,13 @@ pk = keys.public_key()
 def ensure_directory_exists(path):
     os.makedirs(path, exist_ok=True)
 
+def get_db_connection():
+    conn = sqlite3.connect(DB_PATH)
+    return conn
 
 def init_db():
     ensure_directory_exists('/var/lib/ghole')
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('''
     CREATE TABLE IF NOT EXISTS containers (
@@ -42,7 +46,91 @@ def init_db():
     )
     ''')
     conn.commit()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS user_notifications (
+        repo_name TEXT,
+        user_npub TEXT,
+        message TEXT,
+        status TEXT,
+        PRIMARY KEY (repo_name, user_npub)
+    )
+    ''')
+    conn.commit()
+    cursor.execute('''
+    CREATE TABLE IF NOT EXISTS subscriptions (
+        user_npub TEXT,
+        repo_name TEXT,
+        expiration_date DATETIME,
+        PRIMARY KEY (user_npub, repo_name)
+    )
+    ''')
+    conn.commit()
     conn.close()
+
+# add a new subscription upon container creation
+def add_subscription(user_npub, repo_name):
+    expiration_date = datetime.utcnow() + timedelta(days=SUBSCRIPTION_LENGTH_DAYS)
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+    INSERT INTO subscriptions (user_npub, repo_name, expiration_date) VALUES (?, ?, ?)
+    ''', (user_npub, repo_name, expiration_date))
+    conn.commit()
+    conn.close()
+
+# get subscriptions that expire in 3 days
+def get_subscriptions_to_expire():
+    conn = sqlite3.connect(DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT user_npub, repo_name, expiration_date FROM subscriptions WHERE expiration_date < ?
+    ''', (datetime.utcnow() + timedelta(days=3),))
+    subscriptions = cursor.fetchall()
+    conn.close()
+    return subscriptions
+
+# notify users that their subscription is about to expire
+def notify_users_of_subscription_expiration():
+    subscriptions = get_subscriptions_to_expire()
+    for user_npub, repo_name, expiration_date in subscriptions:
+        message = f'Your subscription to {repo_name} is about to expire on {expiration_date}. Go to https://nostrocket.org/products to renew your subscription.'
+        send_user_notification(user_npub, message)
+
+
+# Function to save notification
+def save_notification(repo_name, user_npub, message, status):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    INSERT INTO user_notifications (repo_name, user_npub, message, status) VALUES (?, ?, ?, ?)
+    ''', (repo_name, user_npub, message, status))
+    conn.commit()
+    conn.close()
+
+# Function to retry unsuccessful notifications
+def retry_unsuccessful_notifications():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT repo_name, user_npub, message FROM user_notifications WHERE status = 'unsuccessful'
+    ''')
+    unsuccessful_notifications = cursor.fetchall()
+    conn.close()
+
+    for repo_name, user_npub, message in unsuccessful_notifications:
+        # Implement retry logic here. Upon success:
+        update_notification_status(repo_name, user_npub, 'successful')
+
+def update_notification_status(repo_name, user_npub, new_status):
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    UPDATE user_notifications SET status = ? WHERE repo_name = ? AND user_npub = ?
+    ''', (new_status, repo_name, user_npub))
+    conn.commit()
+    conn.close()
+
+
 
 def find_available_port(start=8000, end=18999):
     for port in range(start, end + 1):
@@ -181,6 +269,7 @@ def deploy():
     ) 
     update_nginx_config(volume_name, available_port)
     register_container_in_db(user_npub, container.id, available_port, volume_path, volume_name)
+    add_subscription(user_npub, volume_name)
     
     return jsonify({"status": "success", "message": "Container deployed and route configured, volume created"})
 
@@ -204,17 +293,8 @@ def user_notification():
     except Exception as e:
         print(e)
         return jsonify({"status": "error"})
-    
 
-
-
-
-
-
-
-# Run the app)
-
-
+# Run the app
 if __name__ == '__main__':
     init_db()
     app.run(host='0.0.0.0', port=31337, debug=True)
