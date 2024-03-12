@@ -8,6 +8,7 @@ import time
 from datetime import datetime, timedelta
 from nostr_sdk import Client, NostrSigner, Keys, PublicKey, Event, UnsignedEvent, EventBuilder, Filter, HandleNotification, Timestamp, nip04_decrypt, nip59_extract_rumor, SecretKey, init_logger, LogLevel
 from settings import *
+from docker import APIClient
 
 init_logger(LogLevel.INFO)
 os.makedirs('/var/lib/ghole', exist_ok=True)
@@ -130,7 +131,16 @@ def update_notification_status(repo_name, user_npub, new_status):
     conn.commit()
     conn.close()
 
-
+# get list of containers with names and ports
+def get_containers():
+    conn = get_db_connection()
+    cursor = conn.cursor()
+    cursor.execute('''
+    SELECT container_id, container_port, volume_path, repo_name FROM containers
+    ''')
+    containers = cursor.fetchall()
+    conn.close()
+    return containers
 
 def find_available_port(start=8000, end=18999):
     for port in range(start, end + 1):
@@ -159,7 +169,7 @@ def update_nginx_config(repo_name, container_port):
         subprocess.run(['nginx', '-s', 'reload'], check=True)
 
 def register_container_in_db(user_npub, container_id, port, volume_path, repo_name):
-    conn = sqlite3.connect(DB_PATH)
+    conn = get_db_connection()
     cursor = conn.cursor()
     cursor.execute('INSERT INTO containers (user_npub, container_id, container_port, volume_path, repo_name) VALUES (?, ?, ?, ?, ?)',
                    (user_npub, container_id, port, volume_path, repo_name))
@@ -194,7 +204,16 @@ def send_user_notification(user_npub,message):
         print(e)
         client.disconnect()
         return False
-    
+
+
+# add endpoint to return all containers
+@app.route('/get_all_containers', methods=['GET'])
+def get_all_containers():
+    containers = get_containers()
+    return jsonify({'containers': containers})
+
+
+
 
 # Check if a repo name is available
 @app.route('/check_name', methods=['GET'])
@@ -273,6 +292,19 @@ def deploy():
     
     return jsonify({"status": "success", "message": "Container deployed and route configured, volume created"})
 
+# create and endpoint that prepares a gzipped export of container with its data
+@app.route('/export', methods=['POST'])
+def export():
+    data = request.json
+    repo_name = data['repo_name']
+    volume_name = repo_name
+    export_path = f"/srv/exports/{volume_name}.tar.gz"
+    try:
+        container = client.containers.get(volume_name)
+        client.api.export(container, export_path)
+        return jsonify({"status": "success", "message": "Exported successfully", "export_path": export_path})
+    except Exception as e:
+        return jsonify({"status": "error", "message": f"Failed to export: {str(e)}"}), 500
 
 # create endpoint that accepts notifications from client
 @app.route('/user_notification', methods=['POST'])
