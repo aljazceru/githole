@@ -28,16 +28,16 @@ server {
 
         # FIXME 
         # if ($server_port = 80) {
-        #   set $original_uri $scheme://$host:$request_uri;
+        #   set $original_uri $scheme://$host$request_uri;
         # }
         if ($server_port = 443) {
-          set $original_uri $scheme://$host:$request_uri;
+          set $original_uri $scheme://$host$request_uri;
         }
         if ($server_port = 8080) {
-          set $original_uri $scheme://$host:$request_uri;
+          set $original_uri $scheme://$host$request_uri;
         }
         if ($server_port = 8000) {
-          set $original_uri $scheme://$host:$request_uri;
+          set $original_uri $scheme://$host$request_uri;
         }
         proxy_set_header X-Original-URI $original_uri;
 

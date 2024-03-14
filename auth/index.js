@@ -43,6 +43,7 @@ async function authenticatedPassThrough(req, res, body, repoName) {
   let url;
   try {
     const res = parseHeaders(req.headers);
+    console.log(res)
     url = res.url;
     authHeader = res.authHeader;
   } catch (e) {
