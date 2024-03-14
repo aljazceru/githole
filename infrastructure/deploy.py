@@ -277,10 +277,15 @@ def deploy():
     volumes = {volume_path: {'bind': '/srv/repos/', 'mode': 'rw'}}
 
     # Deploy the container with the specified volume
+    # container name is first 5 characters of the user_npub + volume_name
+    container_name = user_npub[:5] + volume_name
+
+
+    
     container = client.containers.run(
         image_name,
         detach=True,
-        name=volume_name,  # Set the container name to repo_name
+        name=container_name,  # Set the container name to repo_name
         ports={'80/tcp': available_port},
         volumes=volumes,
         environment=environment,
