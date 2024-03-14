@@ -263,7 +263,7 @@ def deploy():
         return jsonify({"status": "error", "message": "Repo name is already taken"})
 
     # volume path
-    volume_path = f"/srv/user_data/{volume_name}/"  # Updated volume path
+    volume_path = f"/srv/user_data/{user_npub}/{volume_name}/"  # Updated volume path
     image_name = 'ghole'
     
     ensure_directory_exists(volume_path)
