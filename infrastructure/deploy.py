@@ -276,12 +276,8 @@ def deploy():
     # Specify volume binding
     volumes = {volume_path: {'bind': '/srv/repos/', 'mode': 'rw'}}
 
-    # Deploy the container with the specified volume
-    # container name is first 5 characters of the user_npub + volume_name
-    container_name = user_npub[:5] + volume_name
-
-
-    
+    # Deploy the container with the specified volume   
+    container_name = user_npub[-5:] + volume_name
     container = client.containers.run(
         image_name,
         detach=True,
