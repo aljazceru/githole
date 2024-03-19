@@ -8,7 +8,7 @@ RUN gpg --dry-run --quiet --no-keyring --import --import-options import-show /us
 RUN echo "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/debian `lsb_release -cs` nginx" | tee /etc/apt/sources.list.d/nginx.list
 COPY docker/99nginx /etc/apt/preferences.d/99nginx
 # install nginx
-RUN apt-get update && apt-get install -y nginx git fcgiwrap spawn-fcgi nginx-module-njs
+RUN apt-get update && apt-get install -y nginx git fcgiwrap spawn-fcgi 
 # install python3 and pip
 #RUN apt-get install python3-requests python3-flask python3-pip gunicorn
 RUN sed -i '1iload_module modules/ngx_http_js_module.so;' /etc/nginx/nginx.conf 

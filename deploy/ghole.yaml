@@ -1,0 +1,112 @@
+---
+- name: ghole server setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+  tasks:
+
+    - name: Ensure root user's .bashrc file exists
+      ansible.builtin.copy:
+        content: ''
+        dest: /root/.bashrc
+        mode: 0644
+        owner: root
+        group: root
+        force: no
+
+    - name: Update PS1 in root's .bashrc
+      ansible.builtin.lineinfile:
+        path: /root/.bashrc
+        regexp: '^export PS1'
+        line: 'export PS1="\[\033[95m\]\u@\h \[\033[32m\]\$PWD\[\033[33m\] [\$(git symbolic-ref --short HEAD 2>/dev/null)]\[\033[00m\]\$ "'
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        upgrade: yes
+        update_cache: yes
+        cache_valid_time: 86400 
+    - name: Install required packages
+      ansible.builtin.package:
+        name:
+          - git
+          - vim
+          - tmux
+          - whois
+          - jq
+          - curl
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - software-properties-common
+          - python3-pip
+          - virtualenv
+          - python3-setuptools
+          - gnupg2
+          - lsb-release
+          - debian-archive-keyring
+          - xxd
+        state: present
+      become: yes
+
+    - name: Add Nginx signing key
+      ansible.builtin.shell:
+        cmd: curl https://nginx.org/keys/nginx_signing.key | gpg --dearmor | tee /usr/share/keyrings/nginx-archive-keyring.gpg >/dev/null
+        creates: /usr/share/keyrings/nginx-archive-keyring.gpg
+
+    - name: Add Nginx repository
+      ansible.builtin.lineinfile:
+        path: /etc/apt/sources.list.d/nginx.list
+        line: "deb [signed-by=/usr/share/keyrings/nginx-archive-keyring.gpg] http://nginx.org/packages/ubuntu {{ ansible_lsb.codename }} nginx"
+        create: yes
+
+    - name: Update and upgrade apt packages
+      become: true
+      apt:
+        update_cache: yes
+        cache_valid_time: 86400
+
+
+    - name: Install Nginx and additional packages
+      ansible.builtin.apt:
+        name:
+          - nginx
+          - git
+          - fcgiwrap
+          - spawn-fcgi
+        state: present
+
+    - name: echo "unattended-upgrades unattended-upgrades/enable_auto_updates boolean true" | sudo debconf-set-selections  - auto install security updates
+      debconf: name=unattended-upgrades question=unattended-upgrades/enable_auto_updates vtype=boolean value='true'
+    - name: apt install unattended-upgrades
+      apt: name=unattended-upgrades
+    - name: dpkg-reconfigure -f noninteractive unattended-upgrades
+      command:
+        cmd: dpkg-reconfigure -f noninteractive unattended-upgrades
+        creates: /etc/apt/apt.conf.d/20auto-upgrades
+
+
+    - name: Add Docker GPG apt Key
+      apt_key:
+        url: https://download.docker.com/linux/ubuntu/gpg
+        state: present
+
+    - name: Add Docker Repository
+      apt_repository:
+        repo: deb https://download.docker.com/linux/ubuntu jammy stable
+        state: present
+
+    - name: Update apt and install docker-ce
+      apt:
+        name: docker-ce
+        state: latest
+        update_cache: true
+
+    - name: Install Docker Module for Python
+      pip:
+        name: docker
+  handlers:
+
+    - name: restart sshd
+      ansible.builtin.systemd:
+        name: ssh
+        state: restarted
