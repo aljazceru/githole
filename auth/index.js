@@ -60,6 +60,8 @@ async function authenticatedPassThrough(req, res, body, repoName) {
     branch = res.branch;
   } catch (e) {
     console.error(e)
+    console.log('Body:', body.toString()); // print the body on error
+
     res.writeHead(403);
     return res.end();
   }
@@ -75,6 +77,8 @@ async function authenticatedPassThrough(req, res, body, repoName) {
     userId = event.userId;
   } catch (e) {
     console.error(e);
+    console.log('Body:', body.toString()); // print the body on error
+
     res.writeHead(403);
     return res.end();
   }
@@ -147,6 +151,7 @@ async function passThrough(req, res, body) {
   proxyReq.on('error', (err) => {
     console.error('error:', err);
     res.statusCode = 500;
+    console.log('Body:', body.toString()); // print the body on error
     res.end('Proxy Error');
   });
 
